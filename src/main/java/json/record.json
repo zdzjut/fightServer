@@ -1,0 +1,47 @@
+{
+  "result": 1,
+  "message": "添加成功",
+  "data": {
+    "id": 1,
+    "times": 10,
+    "rounds": null,
+    "users": [
+      {
+        "id": 0,
+        "name": "序号",
+        "pwd": null,
+        "balance": 0,
+        "createDate": null
+      },
+      {
+        "id": 1,
+        "name": "测试1",
+        "pwd": "",
+        "balance": 0,
+        "createDate": 1528770666274
+      },
+      {
+        "id": 2,
+        "name": "测试2",
+        "pwd": "",
+        "balance": 0,
+        "createDate": 1528770673910
+      },
+      {
+        "id": 3,
+        "name": "测试3",
+        "pwd": "",
+        "balance": 0,
+        "createDate": 1528770679979
+      },
+      {
+        "id": 4,
+        "name": "测试4",
+        "pwd": "",
+        "balance": 0,
+        "createDate": 1528770685422
+      }
+    ],
+    "date": "2018-06-12 10:36:44"
+  }
+}
