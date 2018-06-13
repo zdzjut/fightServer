@@ -91,7 +91,7 @@ public class RecordController {
                 user.setBalance(user.getBalance() + basicFee * 3);
 
                 User model = userMapper.findOne(user.getId());
-                model.setBalance(model.getBalance() + basicFee);
+                model.setBalance(model.getBalance() + basicFee* 3);
                 userMapper.delete(user.getId());
                 userMapper.insert(model);
             } else {

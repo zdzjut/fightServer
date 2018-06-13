@@ -56,6 +56,18 @@ public class UserController {
             return new Result(1, "登录成功", user);
         }
     }
+    //t通过Id
+    @RequestMapping(value = "/showUser")
+    public Result showUser(Integer id) {
+        //验证
+        User user = userMapper.findOne(id);
+        if (user == null) {
+            return new Result(0, "失败");
+        } else {
+            user.setPwd("******");
+            return new Result(1, "成功", user);
+        }
+    }
 
     //修改用户姓名密码
     @RequestMapping(value = "/modify")
