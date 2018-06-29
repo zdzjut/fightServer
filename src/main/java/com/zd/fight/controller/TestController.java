@@ -1,10 +1,7 @@
 package com.zd.fight.controller;
 
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,5 +31,24 @@ public class TestController {
     public String test(String test) {
         System.out.println(test);
         return "hello world";
+    }
+
+    /**
+     * 提现列表
+     */
+    @ResponseBody
+    @RequestMapping(value="/example",  produces = "application/json;charset=UTF-8")
+    public Object example(String list,String clientId){
+        System.out.println(list);
+        System.out.println(clientId);
+
+        return list;
+    }
+    @ResponseBody
+    @RequestMapping(value="/example1",  produces = "application/json;charset=UTF-8")
+    public Object example1(@RequestBody TestBean testBean){
+        System.out.println(testBean);
+
+        return "添加成功";
     }
 }

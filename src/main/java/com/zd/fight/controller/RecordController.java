@@ -3,6 +3,7 @@ package com.zd.fight.controller;
 
 import com.zd.fight.mapper.LockGameMapper;
 import com.zd.fight.mapper.RecordMapper;
+import com.zd.fight.mapper.SequenceMapper;
 import com.zd.fight.mapper.UserMapper;
 import com.zd.fight.model.LockGame;
 import com.zd.fight.model.Record;
@@ -11,12 +12,11 @@ import com.zd.fight.service.SequenceService;
 import com.zd.fight.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @RequestMapping("fight")
 @RestController
@@ -27,6 +27,8 @@ public class RecordController {
     private RecordMapper recordMapper;
     @Autowired
     private LockGameMapper lockGameMapper;
+    @Autowired
+    private SequenceMapper sequenceMapper;
     @Autowired
     private SequenceService sequenceService;
 
@@ -78,12 +80,16 @@ public class RecordController {
         //如果lockGame不为空，证明这个用户可以操作这个数据
         if (lockGame == null) return new Result(0, "你无法暗地操纵！");
         Record record = recordMapper.findOne(recordId);//找到本局
+
         List<List<Integer>> rounds = record.getRounds();//本局回合
         List<User> users = record.getUsers();//用户，第一个是序号
         if (rounds == null) rounds = new ArrayList<>();//
         List<Integer> list = new ArrayList<>();
         int basicFee = record.getTimes() * times;//原先选择倍数*这次翻倍数
         list.add(rounds.size() + 1);
+
+        int winNo = 1;
+
         for (int i = 1; i < users.size(); i++) {
             User user = users.get(i);
             if (user.getId() == landowner) {//地主此次结果
@@ -91,9 +97,12 @@ public class RecordController {
                 user.setBalance(user.getBalance() + basicFee * 3);
 
                 User model = userMapper.findOne(user.getId());
-                model.setBalance(model.getBalance() + basicFee* 3);
+                model.setBalance(model.getBalance() + basicFee * 3);
                 userMapper.delete(user.getId());
                 userMapper.insert(model);
+
+                //key：地主是第几个序号，value 1代表地主赢了，0代表输了
+                winNo = i * (times > 0 ? 1 : -1);
             } else {
                 list.add(user.getBalance() - basicFee);
                 user.setBalance(user.getBalance() - basicFee);
@@ -104,6 +113,7 @@ public class RecordController {
             }
 
         }
+        list.add(winNo);
         rounds.add(0, list);
         record.setRounds(rounds);
         record.setUsers(users);
@@ -153,39 +163,40 @@ public class RecordController {
         if (one == null) return new Result(0, "该局不存在！");
         LockGame lockGame = lockGameMapper.findByRecordIdAndUserId(recordId, loginUserId);
         //该用户可以修改
-        return lockGame == null ? new Result(0, "本局锁定，无权修改！") : new Result(1);
+        return lockGame == null ? new Result(0, "本局锁定，你无权修改！") : new Result(1);
     }
 
-    /**
-     * 删除单回合
-     */
-    @RequestMapping(value = "/delRound")
-    public Result delRound(Integer recordId) {
-        Record one = recordMapper.findOne(recordId);
-        List<List<Integer>> rounds = one.getRounds();
-        if (rounds == null || rounds.size() == 0) return new Result(0, "没有可删除的内容！！");
-        List<User> users = one.getUsers();
-        int size = users.size();
-        List<Integer> round0 = rounds.get(0);//最新
-        List<Integer> round1 = rounds.get(1);//如果有 上一条
-        for (int i = 0; i < size; i++) {
-            int preview = round1.get(i);
-            if (size == 1) preview = 0;
-            User user = users.get(i);
-            User model = userMapper.findOne(user.getId());
-            //减去最新的，加上旧的
-            model.setBalance(model.getBalance() - round0.get(i) + preview);
-            userMapper.delete(user.getId());
-            userMapper.insert(model);
-            user.setBalance(preview);
-        }
-        rounds.remove(0);
-        one.setRounds(rounds);
-        one.setUsers(users);
-        recordMapper.delete(one.getId());
-        recordMapper.insert(one);
-        return new Result(1, "成功");
-    }
+
+//    /**
+//     * 删除单回合
+//     */
+//    @RequestMapping(value = "/delRound")
+//    public Result delRound(Integer recordId) {
+//        Record one = recordMapper.findOne(recordId);
+//        List<List<Integer>> rounds = one.getRounds();
+//        if (rounds == null || rounds.size() == 0) return new Result(0, "没有可删除的内容！！");
+//        List<User> users = one.getUsers();
+//        int size = users.size();
+//        List<Integer> round0 = rounds.get(0);//最新
+//        List<Integer> round1 = rounds.get(1);//如果有 上一条
+//        for (int i = 0; i < size; i++) {
+//            int preview = round1.get(i);
+//            if (size == 1) preview = 0;
+//            User user = users.get(i);
+//            User model = userMapper.findOne(user.getId());
+//            //减去最新的，加上旧的
+//            model.setBalance(model.getBalance() - round0.get(i) + preview);
+//            userMapper.delete(user.getId());
+//            userMapper.insert(model);
+//            user.setBalance(preview);
+//        }
+//        rounds.remove(0);
+//        one.setRounds(rounds);
+//        one.setUsers(users);
+//        recordMapper.delete(one.getId());
+//        recordMapper.insert(one);
+//        return new Result(1, "成功");
+//    }
 
 
     /**
@@ -194,10 +205,26 @@ public class RecordController {
     @RequestMapping(value = "/dropLock")
     public Result dropLock() {
         List<LockGame> all = lockGameMapper.findAll();
-        if (all.size()==0)        return new Result(0, "没了");
+        if (all.size() == 0) return new Result(0, "没了");
 
-        lockGameMapper.delete(all.get(all.size()-1));
+        lockGameMapper.delete(all.get(all.size() - 1));
         return new Result(1, "所有用户", all);
+    }
+
+    /**
+     * 清空
+     */
+    @PostMapping(value = "/dropAll")
+    public Result dropAll(String token) {
+        if ("zhengdong".equals(token)) {
+            lockGameMapper.deleteAll();
+            recordMapper.deleteAll();
+            userMapper.deleteAll();
+            sequenceMapper.deleteAll();
+            return new Result(1, "删除所有");
+        }
+        return new Result(0, "token不正确");
 
     }
+
 }
